@@ -1,0 +1,387 @@
+diff -bur kernel-vanilla/arch/arm/include/asm/unistd.h kernel/arch/arm/include/asm/unistd.h
+--- kernel-vanilla/arch/arm/include/asm/unistd.h	2014-12-01 14:28:01.000000000 -0800
++++ kernel/arch/arm/include/asm/unistd.h	2015-01-23 13:21:14.567041217 -0800
+@@ -15,7 +15,7 @@
+ 
+ #include <uapi/asm/unistd.h>
+ 
+-#define __NR_syscalls  (380)
++#define __NR_syscalls  (384)
+ #define __ARM_NR_cmpxchg		(__ARM_NR_BASE+0x00fff0)
+ 
+ #define __ARCH_WANT_STAT64
+diff -bur kernel-vanilla/arch/arm/include/uapi/asm/unistd.h kernel/arch/arm/include/uapi/asm/unistd.h
+--- kernel-vanilla/arch/arm/include/uapi/asm/unistd.h	2014-12-01 14:28:01.000000000 -0800
++++ kernel/arch/arm/include/uapi/asm/unistd.h	2015-01-23 13:16:32.326219181 -0800
+@@ -406,6 +406,9 @@
+ #define __NR_process_vm_writev		(__NR_SYSCALL_BASE+377)
+ #define __NR_kcmp			(__NR_SYSCALL_BASE+378)
+ #define __NR_finit_module		(__NR_SYSCALL_BASE+379)
++/** gpu_hook by Mohammad Dashti
++ */
++#define __NR_gpu_hook		(__NR_SYSCALL_BASE+380)
+ 
+ /*
+  * This may need to be greater than __NR_last_syscall+1 in order to
+diff -bur kernel-vanilla/arch/arm/kernel/calls.S kernel/arch/arm/kernel/calls.S
+--- kernel-vanilla/arch/arm/kernel/calls.S	2014-12-01 14:28:01.000000000 -0800
++++ kernel/arch/arm/kernel/calls.S	2015-01-23 12:44:48.220364503 -0800
+@@ -389,6 +389,7 @@
+ 		CALL(sys_process_vm_writev)
+ 		CALL(sys_kcmp)
+ 		CALL(sys_finit_module)
++/* 380 */ CALL(sys_gpu_hook)
+ #ifndef syscalls_counted
+ .equ syscalls_padding, ((NR_syscalls + 3) & ~3) - NR_syscalls
+ #define syscalls_counted
+Only in kernel: .config
+diff -bur kernel-vanilla/drivers/gpu/nvgpu/gk20a/as_gk20a.c kernel/drivers/gpu/nvgpu/gk20a/as_gk20a.c
+--- kernel-vanilla/drivers/gpu/nvgpu/gk20a/as_gk20a.c	2014-12-01 14:28:02.000000000 -0800
++++ kernel/drivers/gpu/nvgpu/gk20a/as_gk20a.c	2015-03-02 16:13:23.945111916 -0800
+@@ -99,6 +99,10 @@
+ 	if (!ch || gk20a_channel_as_bound(ch))
+ 		return -EINVAL;
+ 
++   //Mohammad Dashti
++   //
++   current->gpu_channel = ch;
++
+ 	atomic_inc(&as_share->ref_cnt);
+ 
+ 	/* this will set channel_gk20a->vm */
+@@ -151,6 +155,12 @@
+ 		struct nvhost_as_map_buffer_args *args)
+ {
+ 	gk20a_dbg_fn("");
++   
++   //Mohammad Dashti
++   //
++   if(current->nv_handle & GPU_HOOK_GK20A_FLAG)
++      args->flags = 0x5;
++
+ 	return gk20a_vm_map_buffer(as_share, args->nvmap_handle,
+ 				   &args->o_a.align,
+ 				   args->flags, NV_KIND_DEFAULT);
+diff -bur kernel-vanilla/drivers/gpu/nvgpu/gk20a/channel_gk20a.c kernel/drivers/gpu/nvgpu/gk20a/channel_gk20a.c
+--- kernel-vanilla/drivers/gpu/nvgpu/gk20a/channel_gk20a.c	2014-12-01 14:28:02.000000000 -0800
++++ kernel/drivers/gpu/nvgpu/gk20a/channel_gk20a.c	2014-12-26 13:55:54.446677230 -0800
+@@ -879,6 +879,8 @@
+ 	if (q->size == 0)
+ 		return;
+ 
++   //printk(KERN_INFO "inside channel_gk20a_free_priv_cmdbuf\n");
++
+ 	if (q->base_gpuva)
+ 		gk20a_gmmu_unmap(ch_vm, q->base_gpuva,
+ 				q->mem.size, gk20a_mem_flag_none);
+diff -bur kernel-vanilla/drivers/gpu/nvgpu/gk20a/mm_gk20a.c kernel/drivers/gpu/nvgpu/gk20a/mm_gk20a.c
+--- kernel-vanilla/drivers/gpu/nvgpu/gk20a/mm_gk20a.c	2014-12-01 14:28:02.000000000 -0800
++++ kernel/drivers/gpu/nvgpu/gk20a/mm_gk20a.c	2015-03-02 15:18:18.873913389 -0800
+@@ -1662,6 +1662,8 @@
+ 	u32 page_size  = gmmu_page_sizes[pgsz_idx];
+ 	u64 addr = 0;
+ 
++   //printk(KERN_INFO "inside update_gmmu_ptes_locked\n");
++
+ 	pde_range_from_vaddr_range(vm, first_vaddr, last_vaddr,
+ 				   &pde_lo, &pde_hi);
+ 
+@@ -2470,6 +2472,13 @@
+ 		err = -EINVAL;
+ 	}
+ 
++   //Mohammad Dashti
++   //
++   //printk(KERN_INFO"offset_align = 0x%lx\n",(unsigned long)offset_align);
++   //printk(KERN_INFO"flags = 0x%x\n",flags);
++   //printk(KERN_INFO"kind = 0x%x\n",kind);
++   //printk(KERN_INFO"ret_va = 0x%lx\n",(unsigned long)ret_va);
++
+ 	return err;
+ }
+ 
+@@ -2853,6 +2862,8 @@
+ 	u32 data;
+ 	s32 retry = 200;
+ 
++   //printk(KERN_INFO "inside gk20a_mm_l2_flush\n");
++
+ 	gk20a_dbg_fn("");
+ 
+ 	mutex_lock(&mm->l2_op_lock);
+@@ -2885,6 +2896,7 @@
+ 
+ 	mutex_unlock(&mm->l2_op_lock);
+ }
++EXPORT_SYMBOL(gk20a_mm_l2_flush);
+ 
+ 
+ int gk20a_vm_find_buffer(struct vm_gk20a *vm, u64 gpu_va,
+@@ -2920,6 +2932,8 @@
+ 	s32 retry = 200;
+ 	static DEFINE_MUTEX(tlb_lock);
+ 
++   //printk(KERN_INFO "inside gk20a_mm_tlb_invalidate\n");
++
+ 	gk20a_dbg_fn("");
+ 
+ 	/* pagetables are considered sw states which are preserved after
+diff -bur kernel-vanilla/drivers/video/tegra/nvmap/nvmap.c kernel/drivers/video/tegra/nvmap/nvmap.c
+--- kernel-vanilla/drivers/video/tegra/nvmap/nvmap.c	2014-12-01 14:28:05.000000000 -0800
++++ kernel/drivers/video/tegra/nvmap/nvmap.c	2015-01-26 13:03:40.297832392 -0800
+@@ -37,7 +37,7 @@
+ #include <linux/nvmap.h>
+ #include <trace/events/nvmap.h>
+ 
+-#include "nvmap_priv.h"
++#include "/home/ubuntu/kernel/kernel/drivers/video/tegra/nvmap/nvmap_priv.h"
+ 
+ /* private nvmap_handle flag for pinning duplicate detection */
+ #define NVMAP_HANDLE_VISITED (0x1ul << 31)
+diff -bur kernel-vanilla/drivers/video/tegra/nvmap/nvmap_dev.c kernel/drivers/video/tegra/nvmap/nvmap_dev.c
+--- kernel-vanilla/drivers/video/tegra/nvmap/nvmap_dev.c	2014-12-01 14:28:05.000000000 -0800
++++ kernel/drivers/video/tegra/nvmap/nvmap_dev.c	2015-01-26 13:03:40.309832579 -0800
+@@ -46,8 +46,8 @@
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/nvmap.h>
+ 
+-#include "nvmap_priv.h"
+-#include "nvmap_ioctl.h"
++#include "/home/ubuntu/kernel/kernel/drivers/video/tegra/nvmap/nvmap_priv.h"
++#include "/home/ubuntu/kernel/kernel/drivers/video/tegra/nvmap/nvmap_ioctl.h"
+ 
+ #define NVMAP_CARVEOUT_KILLER_RETRY_TIME 100 /* msecs */
+ 
+diff -bur kernel-vanilla/drivers/video/tegra/nvmap/nvmap_dmabuf.c kernel/drivers/video/tegra/nvmap/nvmap_dmabuf.c
+--- kernel-vanilla/drivers/video/tegra/nvmap/nvmap_dmabuf.c	2014-12-01 14:28:05.000000000 -0800
++++ kernel/drivers/video/tegra/nvmap/nvmap_dmabuf.c	2015-01-26 13:03:40.317832562 -0800
+@@ -35,8 +35,8 @@
+ 
+ #include <trace/events/nvmap.h>
+ 
+-#include "nvmap_priv.h"
+-#include "nvmap_ioctl.h"
++#include "/home/ubuntu/kernel/kernel/drivers/video/tegra/nvmap/nvmap_priv.h"
++#include "/home/ubuntu/kernel/kernel/drivers/video/tegra/nvmap/nvmap_ioctl.h"
+ 
+ #ifdef CONFIG_IOMMU_API
+ #define nvmap_masid_mapping(attach)   to_dma_iommu_mapping((attach)->dev)
+diff -bur kernel-vanilla/drivers/video/tegra/nvmap/nvmap_handle.c kernel/drivers/video/tegra/nvmap/nvmap_handle.c
+--- kernel-vanilla/drivers/video/tegra/nvmap/nvmap_handle.c	2014-12-01 14:28:05.000000000 -0800
++++ kernel/drivers/video/tegra/nvmap/nvmap_handle.c	2015-01-26 13:03:40.325832528 -0800
+@@ -37,8 +37,8 @@
+ 
+ #include <trace/events/nvmap.h>
+ 
+-#include "nvmap_priv.h"
+-#include "nvmap_ioctl.h"
++#include "/home/ubuntu/kernel/kernel/drivers/video/tegra/nvmap/nvmap_priv.h"
++#include "/home/ubuntu/kernel/kernel/drivers/video/tegra/nvmap/nvmap_ioctl.h"
+ 
+ bool zero_memory;
+ 
+diff -bur kernel-vanilla/drivers/video/tegra/nvmap/nvmap_heap.c kernel/drivers/video/tegra/nvmap/nvmap_heap.c
+--- kernel-vanilla/drivers/video/tegra/nvmap/nvmap_heap.c	2014-12-01 14:28:05.000000000 -0800
++++ kernel/drivers/video/tegra/nvmap/nvmap_heap.c	2015-01-26 13:03:40.329832505 -0800
+@@ -37,8 +37,8 @@
+ #include <linux/dma-mapping.h>
+ #include <linux/dma-contiguous.h>
+ 
+-#include "nvmap_priv.h"
+-#include "nvmap_heap.h"
++#include "/home/ubuntu/kernel/kernel/drivers/video/tegra/nvmap/nvmap_priv.h"
++#include "/home/ubuntu/kernel/kernel/drivers/video/tegra/nvmap/nvmap_heap.h"
+ 
+ /*
+  * "carveouts" are platform-defined regions of physically contiguous memory
+diff -bur kernel-vanilla/drivers/video/tegra/nvmap/nvmap_ioctl.c kernel/drivers/video/tegra/nvmap/nvmap_ioctl.c
+--- kernel-vanilla/drivers/video/tegra/nvmap/nvmap_ioctl.c	2014-12-01 14:28:05.000000000 -0800
++++ kernel/drivers/video/tegra/nvmap/nvmap_ioctl.c	2015-02-27 16:17:10.942021972 -0800
+@@ -36,8 +36,8 @@
+ 
+ #include <trace/events/nvmap.h>
+ 
+-#include "nvmap_ioctl.h"
+-#include "nvmap_priv.h"
++#include "/home/ubuntu/kernel/kernel/drivers/video/tegra/nvmap/nvmap_ioctl.h"
++#include "/home/ubuntu/kernel/kernel/drivers/video/tegra/nvmap/nvmap_priv.h"
+ 
+ #include <linux/list.h>
+ 
+@@ -272,6 +272,10 @@
+ 	 * data leakage. */
+ 	op.align = max_t(size_t, op.align, PAGE_SIZE);
+ 
++   //Mohammad Dashti
++   if((current->nv_handle & GPU_HOOK_CACHEABLE) != 0)
++      op.flags = NVMAP_HANDLE_CACHEABLE;
++
+ 	err = nvmap_alloc_handle(client, handle, op.heap_mask, op.align,
+ 				  0, /* no kind */
+ 				  op.flags & (~NVMAP_HANDLE_KIND_SPECIFIED));
+@@ -405,6 +409,13 @@
+ 		return -EFAULT;
+ 	}
+ 
++   //Mohammad Dashti
++   if((current->nv_handle & GPU_HOOK_CACHEABLE) != 0)
++      h->flags = NVMAP_HANDLE_CACHEABLE;
++//      printk(KERN_INFO "setting current->nv_handle, 0x%p, 0x%x\n",h,current->nv_handle);
++
++
++
+ 	trace_nvmap_map_into_caller_ptr(client, h, op.offset,
+ 					op.length, op.flags);
+ 	down_read(&current->mm->mmap_sem);
+@@ -461,6 +472,7 @@
+ 
+ 	if (err)
+ 		nvmap_handle_put(h);
++
+ 	return err;
+ }
+ 
+diff -bur kernel-vanilla/drivers/video/tegra/nvmap/nvmap_mm.c kernel/drivers/video/tegra/nvmap/nvmap_mm.c
+--- kernel-vanilla/drivers/video/tegra/nvmap/nvmap_mm.c	2014-12-01 14:28:05.000000000 -0800
++++ kernel/drivers/video/tegra/nvmap/nvmap_mm.c	2015-01-27 15:46:05.621606792 -0800
+@@ -22,7 +22,7 @@
+ 
+ #include <trace/events/nvmap.h>
+ 
+-#include "nvmap_priv.h"
++#include "/home/ubuntu/kernel/kernel/drivers/video/tegra/nvmap/nvmap_priv.h"
+ 
+ void inner_flush_cache_all(void)
+ {
+@@ -36,6 +36,7 @@
+ 	on_each_cpu(v7_flush_kern_cache_all, NULL, 1);
+ #endif
+ }
++EXPORT_SYMBOL(inner_flush_cache_all);
+ 
+ void inner_clean_cache_all(void)
+ {
+diff -bur kernel-vanilla/drivers/video/tegra/nvmap/nvmap_pp.c kernel/drivers/video/tegra/nvmap/nvmap_pp.c
+--- kernel-vanilla/drivers/video/tegra/nvmap/nvmap_pp.c	2014-12-01 14:28:05.000000000 -0800
++++ kernel/drivers/video/tegra/nvmap/nvmap_pp.c	2015-01-26 13:03:40.355832377 -0800
+@@ -29,7 +29,7 @@
+ #include <linux/kthread.h>
+ #include <linux/debugfs.h>
+ 
+-#include "nvmap_priv.h"
++#include "/home/ubuntu/kernel/kernel/drivers/video/tegra/nvmap/nvmap_priv.h"
+ 
+ #define NVMAP_TEST_PAGE_POOL_SHRINKER     1
+ #define PENDING_PAGES_SIZE                (SZ_1M / PAGE_SIZE)
+diff -bur kernel-vanilla/drivers/video/tegra/nvmap/nvmap_priv.h kernel/drivers/video/tegra/nvmap/nvmap_priv.h
+--- kernel-vanilla/drivers/video/tegra/nvmap/nvmap_priv.h	2014-12-01 14:28:05.000000000 -0800
++++ kernel/drivers/video/tegra/nvmap/nvmap_priv.h	2015-01-26 13:03:40.361832347 -0800
+@@ -47,7 +47,7 @@
+ #ifndef CONFIG_ARM64
+ #include <asm/outercache.h>
+ #endif
+-#include "nvmap_heap.h"
++#include "/home/ubuntu/kernel/kernel/drivers/video/tegra/nvmap/nvmap_heap.h"
+ 
+ #ifdef CONFIG_NVMAP_HIGHMEM_ONLY
+ #define __GFP_NVMAP     __GFP_HIGHMEM
+diff -bur kernel-vanilla/include/linux/sched.h kernel/include/linux/sched.h
+--- kernel-vanilla/include/linux/sched.h	2014-12-01 14:28:05.000000000 -0800
++++ kernel/include/linux/sched.h	2015-03-02 15:23:23.803190047 -0800
+@@ -71,6 +71,13 @@
+ 
+ #include <asm/processor.h>
+ 
++/* Added by Mohammad Dashti
++ **/
++//#include <linux/nvmap.h>
++//#include "/home/ubuntu/kernel/kernel/drivers/video/tegra/nvmap/nvmap_priv.h"
++struct nvmap_handle;
++struct channel_gk20a;
++
+ struct exec_domain;
+ struct futex_pi_state;
+ struct robust_list_head;
+@@ -173,6 +180,13 @@
+ 
+ #define TASK_STATE_TO_CHAR_STR "RSDTtZXxKWP"
+ 
++//Mohammad Dashti
++//gpu_hook flags
++#define GPU_HOOK_CACHEABLE BIT(0)
++#define GPU_HOOK_FLUSH_CPU_CACHE BIT(1)
++#define GPU_HOOK_GK20A_FLAG BIT(2)
++
++
+ extern char ___assert_task_state[1 - 2*!!(
+ 		sizeof(TASK_STATE_TO_CHAR_STR)-1 != ilog2(TASK_STATE_MAX)+1)];
+ 
+@@ -1447,6 +1461,11 @@
+ 	unsigned int	sequential_io;
+ 	unsigned int	sequential_io_avg;
+ #endif
++
++   /** Added by Mohammad Dashti
++    */
++   unsigned int nv_handle;
++   struct channel_gk20a *gpu_channel;
+ };
+ 
+ /* Future-safe accessor for struct task_struct's cpus_allowed. */
+diff -bur kernel-vanilla/include/linux/syscalls.h kernel/include/linux/syscalls.h
+--- kernel-vanilla/include/linux/syscalls.h	2014-12-01 14:28:05.000000000 -0800
++++ kernel/include/linux/syscalls.h	2015-01-27 15:35:29.606056602 -0800
+@@ -215,6 +215,10 @@
+ asmlinkage long sys_nanosleep(struct timespec __user *rqtp, struct timespec __user *rmtp);
+ asmlinkage long sys_alarm(unsigned int seconds);
+ asmlinkage long sys_getpid(void);
++/** gpu_hook added by Mohammad Dashti
++ */
++asmlinkage long sys_gpu_hook(unsigned int flag);
++
+ asmlinkage long sys_getppid(void);
+ asmlinkage long sys_getuid(void);
+ asmlinkage long sys_geteuid(void);
+diff -bur kernel-vanilla/kernel/fork.c kernel/kernel/fork.c
+--- kernel-vanilla/kernel/fork.c	2014-12-01 14:28:05.000000000 -0800
++++ kernel/kernel/fork.c	2015-01-26 16:11:55.628464743 -0800
+@@ -1334,6 +1334,9 @@
+ 	p->sequential_io_avg	= 0;
+ #endif
+ 
++   //Mohammad Dashti
++   p->nv_handle = 0;
++
+ 	/* Perform scheduler related setup. Assign this task to a CPU. */
+ 	sched_fork(p);
+ 
+diff -bur kernel-vanilla/kernel/sys.c kernel/kernel/sys.c
+--- kernel-vanilla/kernel/sys.c	2014-12-01 14:28:05.000000000 -0800
++++ kernel/kernel/sys.c	2015-01-27 15:33:10.501591047 -0800
+@@ -1089,6 +1089,26 @@
+ 	return task_tgid_vnr(current);
+ }
+ 
++pid_t (*function_pointer)(unsigned int flag);
++EXPORT_SYMBOL(function_pointer);
++pid_t gpu_hook_kernel(unsigned int flag)
++{
++   if(function_pointer)
++      return (*function_pointer)(flag);
++   else
++      return -1;
++}
++EXPORT_SYMBOL(gpu_hook_kernel);
++/**
++ * gpu_hook system call added by Mohammad Dashti
++ */
++SYSCALL_DEFINE1(gpu_hook,unsigned int, flag)
++{
++	//return task_tgid_vnr(current);
++   return gpu_hook_kernel(flag);
++}
++
++
+ /* Thread ID - the internal kernel "pid" */
+ SYSCALL_DEFINE0(gettid)
+ {

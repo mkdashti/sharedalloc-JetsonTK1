@@ -1,0 +1,1 @@
+This is a modified version of BFS from Rodinia using the sharedalloc method for allocating memory.
