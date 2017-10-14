@@ -1,4 +1,4 @@
-diff -bur kernel-vanilla/arch/arm/include/asm/unistd.h kernel/arch/arm/include/asm/unistd.h
+diff -burp kernel-vanilla/arch/arm/include/asm/unistd.h kernel/arch/arm/include/asm/unistd.h
 --- kernel-vanilla/arch/arm/include/asm/unistd.h	2014-12-01 14:28:01.000000000 -0800
 +++ kernel/arch/arm/include/asm/unistd.h	2015-01-23 13:21:14.567041217 -0800
 @@ -15,7 +15,7 @@
@@ -10,7 +10,7 @@ diff -bur kernel-vanilla/arch/arm/include/asm/unistd.h kernel/arch/arm/include/a
  #define __ARM_NR_cmpxchg		(__ARM_NR_BASE+0x00fff0)
  
  #define __ARCH_WANT_STAT64
-diff -bur kernel-vanilla/arch/arm/include/uapi/asm/unistd.h kernel/arch/arm/include/uapi/asm/unistd.h
+diff -burp kernel-vanilla/arch/arm/include/uapi/asm/unistd.h kernel/arch/arm/include/uapi/asm/unistd.h
 --- kernel-vanilla/arch/arm/include/uapi/asm/unistd.h	2014-12-01 14:28:01.000000000 -0800
 +++ kernel/arch/arm/include/uapi/asm/unistd.h	2015-01-23 13:16:32.326219181 -0800
 @@ -406,6 +406,9 @@
@@ -23,7 +23,7 @@ diff -bur kernel-vanilla/arch/arm/include/uapi/asm/unistd.h kernel/arch/arm/incl
  
  /*
   * This may need to be greater than __NR_last_syscall+1 in order to
-diff -bur kernel-vanilla/arch/arm/kernel/calls.S kernel/arch/arm/kernel/calls.S
+diff -burp kernel-vanilla/arch/arm/kernel/calls.S kernel/arch/arm/kernel/calls.S
 --- kernel-vanilla/arch/arm/kernel/calls.S	2014-12-01 14:28:01.000000000 -0800
 +++ kernel/arch/arm/kernel/calls.S	2015-01-23 12:44:48.220364503 -0800
 @@ -389,6 +389,7 @@
@@ -34,11 +34,10 @@ diff -bur kernel-vanilla/arch/arm/kernel/calls.S kernel/arch/arm/kernel/calls.S
  #ifndef syscalls_counted
  .equ syscalls_padding, ((NR_syscalls + 3) & ~3) - NR_syscalls
  #define syscalls_counted
-Only in kernel: .config
-diff -bur kernel-vanilla/drivers/gpu/nvgpu/gk20a/as_gk20a.c kernel/drivers/gpu/nvgpu/gk20a/as_gk20a.c
+diff -burp kernel-vanilla/drivers/gpu/nvgpu/gk20a/as_gk20a.c kernel/drivers/gpu/nvgpu/gk20a/as_gk20a.c
 --- kernel-vanilla/drivers/gpu/nvgpu/gk20a/as_gk20a.c	2014-12-01 14:28:02.000000000 -0800
 +++ kernel/drivers/gpu/nvgpu/gk20a/as_gk20a.c	2015-03-02 16:13:23.945111916 -0800
-@@ -99,6 +99,10 @@
+@@ -99,6 +99,10 @@ static int gk20a_as_ioctl_bind_channel(
  	if (!ch || gk20a_channel_as_bound(ch))
  		return -EINVAL;
  
@@ -49,7 +48,7 @@ diff -bur kernel-vanilla/drivers/gpu/nvgpu/gk20a/as_gk20a.c kernel/drivers/gpu/n
  	atomic_inc(&as_share->ref_cnt);
  
  	/* this will set channel_gk20a->vm */
-@@ -151,6 +155,12 @@
+@@ -151,6 +155,12 @@ static int gk20a_as_ioctl_map_buffer(
  		struct nvhost_as_map_buffer_args *args)
  {
  	gk20a_dbg_fn("");
@@ -62,10 +61,10 @@ diff -bur kernel-vanilla/drivers/gpu/nvgpu/gk20a/as_gk20a.c kernel/drivers/gpu/n
  	return gk20a_vm_map_buffer(as_share, args->nvmap_handle,
  				   &args->o_a.align,
  				   args->flags, NV_KIND_DEFAULT);
-diff -bur kernel-vanilla/drivers/gpu/nvgpu/gk20a/channel_gk20a.c kernel/drivers/gpu/nvgpu/gk20a/channel_gk20a.c
+diff -burp kernel-vanilla/drivers/gpu/nvgpu/gk20a/channel_gk20a.c kernel/drivers/gpu/nvgpu/gk20a/channel_gk20a.c
 --- kernel-vanilla/drivers/gpu/nvgpu/gk20a/channel_gk20a.c	2014-12-01 14:28:02.000000000 -0800
 +++ kernel/drivers/gpu/nvgpu/gk20a/channel_gk20a.c	2014-12-26 13:55:54.446677230 -0800
-@@ -879,6 +879,8 @@
+@@ -879,6 +879,8 @@ static void channel_gk20a_free_priv_cmdb
  	if (q->size == 0)
  		return;
  
@@ -74,10 +73,10 @@ diff -bur kernel-vanilla/drivers/gpu/nvgpu/gk20a/channel_gk20a.c kernel/drivers/
  	if (q->base_gpuva)
  		gk20a_gmmu_unmap(ch_vm, q->base_gpuva,
  				q->mem.size, gk20a_mem_flag_none);
-diff -bur kernel-vanilla/drivers/gpu/nvgpu/gk20a/mm_gk20a.c kernel/drivers/gpu/nvgpu/gk20a/mm_gk20a.c
+diff -burp kernel-vanilla/drivers/gpu/nvgpu/gk20a/mm_gk20a.c kernel/drivers/gpu/nvgpu/gk20a/mm_gk20a.c
 --- kernel-vanilla/drivers/gpu/nvgpu/gk20a/mm_gk20a.c	2014-12-01 14:28:02.000000000 -0800
 +++ kernel/drivers/gpu/nvgpu/gk20a/mm_gk20a.c	2015-03-02 15:18:18.873913389 -0800
-@@ -1662,6 +1662,8 @@
+@@ -1662,6 +1662,8 @@ static int update_gmmu_ptes_locked(struc
  	u32 page_size  = gmmu_page_sizes[pgsz_idx];
  	u64 addr = 0;
  
@@ -86,7 +85,7 @@ diff -bur kernel-vanilla/drivers/gpu/nvgpu/gk20a/mm_gk20a.c kernel/drivers/gpu/n
  	pde_range_from_vaddr_range(vm, first_vaddr, last_vaddr,
  				   &pde_lo, &pde_hi);
  
-@@ -2470,6 +2472,13 @@
+@@ -2470,6 +2472,13 @@ int gk20a_vm_map_buffer(struct gk20a_as_
  		err = -EINVAL;
  	}
  
@@ -100,7 +99,7 @@ diff -bur kernel-vanilla/drivers/gpu/nvgpu/gk20a/mm_gk20a.c kernel/drivers/gpu/n
  	return err;
  }
  
-@@ -2853,6 +2862,8 @@
+@@ -2853,6 +2862,8 @@ void gk20a_mm_l2_flush(struct gk20a *g,
  	u32 data;
  	s32 retry = 200;
  
@@ -109,7 +108,7 @@ diff -bur kernel-vanilla/drivers/gpu/nvgpu/gk20a/mm_gk20a.c kernel/drivers/gpu/n
  	gk20a_dbg_fn("");
  
  	mutex_lock(&mm->l2_op_lock);
-@@ -2885,6 +2896,7 @@
+@@ -2885,6 +2896,7 @@ void gk20a_mm_l2_flush(struct gk20a *g,
  
  	mutex_unlock(&mm->l2_op_lock);
  }
@@ -117,7 +116,7 @@ diff -bur kernel-vanilla/drivers/gpu/nvgpu/gk20a/mm_gk20a.c kernel/drivers/gpu/n
  
  
  int gk20a_vm_find_buffer(struct vm_gk20a *vm, u64 gpu_va,
-@@ -2920,6 +2932,8 @@
+@@ -2920,6 +2932,8 @@ void gk20a_mm_tlb_invalidate(struct vm_g
  	s32 retry = 200;
  	static DEFINE_MUTEX(tlb_lock);
  
@@ -126,7 +125,7 @@ diff -bur kernel-vanilla/drivers/gpu/nvgpu/gk20a/mm_gk20a.c kernel/drivers/gpu/n
  	gk20a_dbg_fn("");
  
  	/* pagetables are considered sw states which are preserved after
-diff -bur kernel-vanilla/drivers/video/tegra/nvmap/nvmap.c kernel/drivers/video/tegra/nvmap/nvmap.c
+diff -burp kernel-vanilla/drivers/video/tegra/nvmap/nvmap.c kernel/drivers/video/tegra/nvmap/nvmap.c
 --- kernel-vanilla/drivers/video/tegra/nvmap/nvmap.c	2014-12-01 14:28:05.000000000 -0800
 +++ kernel/drivers/video/tegra/nvmap/nvmap.c	2015-01-26 13:03:40.297832392 -0800
 @@ -37,7 +37,7 @@
@@ -138,7 +137,7 @@ diff -bur kernel-vanilla/drivers/video/tegra/nvmap/nvmap.c kernel/drivers/video/
  
  /* private nvmap_handle flag for pinning duplicate detection */
  #define NVMAP_HANDLE_VISITED (0x1ul << 31)
-diff -bur kernel-vanilla/drivers/video/tegra/nvmap/nvmap_dev.c kernel/drivers/video/tegra/nvmap/nvmap_dev.c
+diff -burp kernel-vanilla/drivers/video/tegra/nvmap/nvmap_dev.c kernel/drivers/video/tegra/nvmap/nvmap_dev.c
 --- kernel-vanilla/drivers/video/tegra/nvmap/nvmap_dev.c	2014-12-01 14:28:05.000000000 -0800
 +++ kernel/drivers/video/tegra/nvmap/nvmap_dev.c	2015-01-26 13:03:40.309832579 -0800
 @@ -46,8 +46,8 @@
@@ -152,7 +151,7 @@ diff -bur kernel-vanilla/drivers/video/tegra/nvmap/nvmap_dev.c kernel/drivers/vi
  
  #define NVMAP_CARVEOUT_KILLER_RETRY_TIME 100 /* msecs */
  
-diff -bur kernel-vanilla/drivers/video/tegra/nvmap/nvmap_dmabuf.c kernel/drivers/video/tegra/nvmap/nvmap_dmabuf.c
+diff -burp kernel-vanilla/drivers/video/tegra/nvmap/nvmap_dmabuf.c kernel/drivers/video/tegra/nvmap/nvmap_dmabuf.c
 --- kernel-vanilla/drivers/video/tegra/nvmap/nvmap_dmabuf.c	2014-12-01 14:28:05.000000000 -0800
 +++ kernel/drivers/video/tegra/nvmap/nvmap_dmabuf.c	2015-01-26 13:03:40.317832562 -0800
 @@ -35,8 +35,8 @@
@@ -166,7 +165,7 @@ diff -bur kernel-vanilla/drivers/video/tegra/nvmap/nvmap_dmabuf.c kernel/drivers
  
  #ifdef CONFIG_IOMMU_API
  #define nvmap_masid_mapping(attach)   to_dma_iommu_mapping((attach)->dev)
-diff -bur kernel-vanilla/drivers/video/tegra/nvmap/nvmap_handle.c kernel/drivers/video/tegra/nvmap/nvmap_handle.c
+diff -burp kernel-vanilla/drivers/video/tegra/nvmap/nvmap_handle.c kernel/drivers/video/tegra/nvmap/nvmap_handle.c
 --- kernel-vanilla/drivers/video/tegra/nvmap/nvmap_handle.c	2014-12-01 14:28:05.000000000 -0800
 +++ kernel/drivers/video/tegra/nvmap/nvmap_handle.c	2015-01-26 13:03:40.325832528 -0800
 @@ -37,8 +37,8 @@
@@ -180,7 +179,7 @@ diff -bur kernel-vanilla/drivers/video/tegra/nvmap/nvmap_handle.c kernel/drivers
  
  bool zero_memory;
  
-diff -bur kernel-vanilla/drivers/video/tegra/nvmap/nvmap_heap.c kernel/drivers/video/tegra/nvmap/nvmap_heap.c
+diff -burp kernel-vanilla/drivers/video/tegra/nvmap/nvmap_heap.c kernel/drivers/video/tegra/nvmap/nvmap_heap.c
 --- kernel-vanilla/drivers/video/tegra/nvmap/nvmap_heap.c	2014-12-01 14:28:05.000000000 -0800
 +++ kernel/drivers/video/tegra/nvmap/nvmap_heap.c	2015-01-26 13:03:40.329832505 -0800
 @@ -37,8 +37,8 @@
@@ -194,7 +193,7 @@ diff -bur kernel-vanilla/drivers/video/tegra/nvmap/nvmap_heap.c kernel/drivers/v
  
  /*
   * "carveouts" are platform-defined regions of physically contiguous memory
-diff -bur kernel-vanilla/drivers/video/tegra/nvmap/nvmap_ioctl.c kernel/drivers/video/tegra/nvmap/nvmap_ioctl.c
+diff -burp kernel-vanilla/drivers/video/tegra/nvmap/nvmap_ioctl.c kernel/drivers/video/tegra/nvmap/nvmap_ioctl.c
 --- kernel-vanilla/drivers/video/tegra/nvmap/nvmap_ioctl.c	2014-12-01 14:28:05.000000000 -0800
 +++ kernel/drivers/video/tegra/nvmap/nvmap_ioctl.c	2015-02-27 16:17:10.942021972 -0800
 @@ -36,8 +36,8 @@
@@ -208,7 +207,7 @@ diff -bur kernel-vanilla/drivers/video/tegra/nvmap/nvmap_ioctl.c kernel/drivers/
  
  #include <linux/list.h>
  
-@@ -272,6 +272,10 @@
+@@ -272,6 +272,10 @@ int nvmap_ioctl_alloc(struct file *filp,
  	 * data leakage. */
  	op.align = max_t(size_t, op.align, PAGE_SIZE);
  
@@ -219,7 +218,7 @@ diff -bur kernel-vanilla/drivers/video/tegra/nvmap/nvmap_ioctl.c kernel/drivers/
  	err = nvmap_alloc_handle(client, handle, op.heap_mask, op.align,
  				  0, /* no kind */
  				  op.flags & (~NVMAP_HANDLE_KIND_SPECIFIED));
-@@ -405,6 +409,13 @@
+@@ -405,6 +409,13 @@ int nvmap_map_into_caller_ptr(struct fil
  		return -EFAULT;
  	}
  
@@ -233,7 +232,7 @@ diff -bur kernel-vanilla/drivers/video/tegra/nvmap/nvmap_ioctl.c kernel/drivers/
  	trace_nvmap_map_into_caller_ptr(client, h, op.offset,
  					op.length, op.flags);
  	down_read(&current->mm->mmap_sem);
-@@ -461,6 +472,7 @@
+@@ -461,6 +472,7 @@ out:
  
  	if (err)
  		nvmap_handle_put(h);
@@ -241,7 +240,7 @@ diff -bur kernel-vanilla/drivers/video/tegra/nvmap/nvmap_ioctl.c kernel/drivers/
  	return err;
  }
  
-diff -bur kernel-vanilla/drivers/video/tegra/nvmap/nvmap_mm.c kernel/drivers/video/tegra/nvmap/nvmap_mm.c
+diff -burp kernel-vanilla/drivers/video/tegra/nvmap/nvmap_mm.c kernel/drivers/video/tegra/nvmap/nvmap_mm.c
 --- kernel-vanilla/drivers/video/tegra/nvmap/nvmap_mm.c	2014-12-01 14:28:05.000000000 -0800
 +++ kernel/drivers/video/tegra/nvmap/nvmap_mm.c	2015-01-27 15:46:05.621606792 -0800
 @@ -22,7 +22,7 @@
@@ -253,7 +252,7 @@ diff -bur kernel-vanilla/drivers/video/tegra/nvmap/nvmap_mm.c kernel/drivers/vid
  
  void inner_flush_cache_all(void)
  {
-@@ -36,6 +36,7 @@
+@@ -36,6 +36,7 @@ void inner_flush_cache_all(void)
  	on_each_cpu(v7_flush_kern_cache_all, NULL, 1);
  #endif
  }
@@ -261,7 +260,7 @@ diff -bur kernel-vanilla/drivers/video/tegra/nvmap/nvmap_mm.c kernel/drivers/vid
  
  void inner_clean_cache_all(void)
  {
-diff -bur kernel-vanilla/drivers/video/tegra/nvmap/nvmap_pp.c kernel/drivers/video/tegra/nvmap/nvmap_pp.c
+diff -burp kernel-vanilla/drivers/video/tegra/nvmap/nvmap_pp.c kernel/drivers/video/tegra/nvmap/nvmap_pp.c
 --- kernel-vanilla/drivers/video/tegra/nvmap/nvmap_pp.c	2014-12-01 14:28:05.000000000 -0800
 +++ kernel/drivers/video/tegra/nvmap/nvmap_pp.c	2015-01-26 13:03:40.355832377 -0800
 @@ -29,7 +29,7 @@
@@ -273,7 +272,7 @@ diff -bur kernel-vanilla/drivers/video/tegra/nvmap/nvmap_pp.c kernel/drivers/vid
  
  #define NVMAP_TEST_PAGE_POOL_SHRINKER     1
  #define PENDING_PAGES_SIZE                (SZ_1M / PAGE_SIZE)
-diff -bur kernel-vanilla/drivers/video/tegra/nvmap/nvmap_priv.h kernel/drivers/video/tegra/nvmap/nvmap_priv.h
+diff -burp kernel-vanilla/drivers/video/tegra/nvmap/nvmap_priv.h kernel/drivers/video/tegra/nvmap/nvmap_priv.h
 --- kernel-vanilla/drivers/video/tegra/nvmap/nvmap_priv.h	2014-12-01 14:28:05.000000000 -0800
 +++ kernel/drivers/video/tegra/nvmap/nvmap_priv.h	2015-01-26 13:03:40.361832347 -0800
 @@ -47,7 +47,7 @@
@@ -285,10 +284,10 @@ diff -bur kernel-vanilla/drivers/video/tegra/nvmap/nvmap_priv.h kernel/drivers/v
  
  #ifdef CONFIG_NVMAP_HIGHMEM_ONLY
  #define __GFP_NVMAP     __GFP_HIGHMEM
-diff -bur kernel-vanilla/include/linux/sched.h kernel/include/linux/sched.h
+diff -burp kernel-vanilla/include/linux/sched.h kernel/include/linux/sched.h
 --- kernel-vanilla/include/linux/sched.h	2014-12-01 14:28:05.000000000 -0800
 +++ kernel/include/linux/sched.h	2015-03-02 15:23:23.803190047 -0800
-@@ -71,6 +71,13 @@
+@@ -71,6 +71,13 @@ struct sched_param {
  
  #include <asm/processor.h>
  
@@ -302,7 +301,7 @@ diff -bur kernel-vanilla/include/linux/sched.h kernel/include/linux/sched.h
  struct exec_domain;
  struct futex_pi_state;
  struct robust_list_head;
-@@ -173,6 +180,13 @@
+@@ -173,6 +180,13 @@ print_cfs_rq(struct seq_file *m, int cpu
  
  #define TASK_STATE_TO_CHAR_STR "RSDTtZXxKWP"
  
@@ -316,7 +315,7 @@ diff -bur kernel-vanilla/include/linux/sched.h kernel/include/linux/sched.h
  extern char ___assert_task_state[1 - 2*!!(
  		sizeof(TASK_STATE_TO_CHAR_STR)-1 != ilog2(TASK_STATE_MAX)+1)];
  
-@@ -1447,6 +1461,11 @@
+@@ -1447,6 +1461,11 @@ struct task_struct {
  	unsigned int	sequential_io;
  	unsigned int	sequential_io_avg;
  #endif
@@ -328,10 +327,10 @@ diff -bur kernel-vanilla/include/linux/sched.h kernel/include/linux/sched.h
  };
  
  /* Future-safe accessor for struct task_struct's cpus_allowed. */
-diff -bur kernel-vanilla/include/linux/syscalls.h kernel/include/linux/syscalls.h
+diff -burp kernel-vanilla/include/linux/syscalls.h kernel/include/linux/syscalls.h
 --- kernel-vanilla/include/linux/syscalls.h	2014-12-01 14:28:05.000000000 -0800
 +++ kernel/include/linux/syscalls.h	2015-01-27 15:35:29.606056602 -0800
-@@ -215,6 +215,10 @@
+@@ -215,6 +215,10 @@ asmlinkage long sys_gettid(void);
  asmlinkage long sys_nanosleep(struct timespec __user *rqtp, struct timespec __user *rmtp);
  asmlinkage long sys_alarm(unsigned int seconds);
  asmlinkage long sys_getpid(void);
@@ -342,10 +341,10 @@ diff -bur kernel-vanilla/include/linux/syscalls.h kernel/include/linux/syscalls.
  asmlinkage long sys_getppid(void);
  asmlinkage long sys_getuid(void);
  asmlinkage long sys_geteuid(void);
-diff -bur kernel-vanilla/kernel/fork.c kernel/kernel/fork.c
+diff -burp kernel-vanilla/kernel/fork.c kernel/kernel/fork.c
 --- kernel-vanilla/kernel/fork.c	2014-12-01 14:28:05.000000000 -0800
 +++ kernel/kernel/fork.c	2015-01-26 16:11:55.628464743 -0800
-@@ -1334,6 +1334,9 @@
+@@ -1334,6 +1334,9 @@ static struct task_struct *copy_process(
  	p->sequential_io_avg	= 0;
  #endif
  
@@ -355,10 +354,10 @@ diff -bur kernel-vanilla/kernel/fork.c kernel/kernel/fork.c
  	/* Perform scheduler related setup. Assign this task to a CPU. */
  	sched_fork(p);
  
-diff -bur kernel-vanilla/kernel/sys.c kernel/kernel/sys.c
+diff -burp kernel-vanilla/kernel/sys.c kernel/kernel/sys.c
 --- kernel-vanilla/kernel/sys.c	2014-12-01 14:28:05.000000000 -0800
 +++ kernel/kernel/sys.c	2015-01-27 15:33:10.501591047 -0800
-@@ -1089,6 +1089,26 @@
+@@ -1089,6 +1089,26 @@ SYSCALL_DEFINE0(getpid)
  	return task_tgid_vnr(current);
  }
  
